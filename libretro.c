@@ -48,7 +48,7 @@ static int translation_caches_inited = 0;
 #endif
 
 #ifndef MAX_PATH
-#define MAX_PATH (512)
+#define MAX_PATH (1024)
 #endif
 
 // 59.72750057 hz
@@ -848,15 +848,19 @@ bool retro_load_game(const struct retro_game_info* info)
    if (!info)
       return false;
 
+    printf("in %s l.%d\n", __func__, __LINE__);
    use_libretro_save_method = 0;
    check_variables(1);
+    printf("in %s l.%d\n", __func__, __LINE__);
    set_input_descriptors();
 
+    printf("in %s l.%d\n", __func__, __LINE__);
 #if defined(HAVE_DYNAREC)
    if (dynarec_enable)
    {
 #if defined(HAVE_MMAP)
 
+    printf("in %s l.%d\n", __func__, __LINE__);
    rom_translation_cache = mmap(NULL, ROM_TRANSLATION_CACHE_SIZE,
                                 PROT_READ | PROT_WRITE | PROT_EXEC, MAP_ANON | MAP_PRIVATE, -1, 0);
    ram_translation_cache = mmap(NULL, RAM_TRANSLATION_CACHE_SIZE,
@@ -864,6 +868,7 @@ bool retro_load_game(const struct retro_game_info* info)
    bios_translation_cache = mmap(NULL, BIOS_TRANSLATION_CACHE_SIZE,
                                  PROT_READ | PROT_WRITE | PROT_EXEC, MAP_ANON | MAP_PRIVATE, -1, 0);
 
+    printf("in %s l.%d\n", __func__, __LINE__);
    rom_translation_ptr = rom_translation_cache;
    ram_translation_ptr = ram_translation_cache;
    bios_translation_ptr = bios_translation_cache;
@@ -885,6 +890,7 @@ bool retro_load_game(const struct retro_game_info* info)
    dynarec_enable = 0;
 #endif
 
+    printf("in %s l.%d\n", __func__, __LINE__);
    char filename_bios[MAX_PATH];
    const char* dir = NULL;
 
@@ -894,6 +900,7 @@ bool retro_load_game(const struct retro_game_info* info)
 
    extract_directory(main_path, info->path, sizeof(main_path));
 
+    printf("in %s l.%d\n", __func__, __LINE__);
    if (environ_cb(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, &dir) && dir)
       strncpy(filename_bios, dir, sizeof(filename_bios));
    else
@@ -901,6 +908,7 @@ bool retro_load_game(const struct retro_game_info* info)
 
    strncat(filename_bios, "/gba_bios.bin", sizeof(filename_bios));
 
+    printf("in %s l.%d\n", __func__, __LINE__);
 
    if (environ_cb(RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY, &dir) && dir)
       strncpy(save_path, dir, sizeof(save_path));
@@ -909,10 +917,12 @@ bool retro_load_game(const struct retro_game_info* info)
 
    if (load_bios(filename_bios) != 0)
    {
+      printf("Could not load BIOS: %s\n", filename_bios);
       error_msg("Could not load BIOS image file.");
       return false;
    }
 
+    printf("in %s l.%d\n", __func__, __LINE__);
    if (bios_rom[0] != 0x18)
    {
       info_msg("You have an incorrect BIOS image.");
@@ -920,6 +930,7 @@ bool retro_load_game(const struct retro_game_info* info)
       info_msg("It is strongly recommended that you obtain the correct BIOS file.");
    }
 
+    printf("in %s l.%d\n", __func__, __LINE__);
    memset(gamepak_backup, -1, sizeof(gamepak_backup));
    gamepak_filename[0] = 0;
    if (load_gamepak(info, info->path) != 0)
@@ -927,13 +938,17 @@ bool retro_load_game(const struct retro_game_info* info)
       error_msg("Could not load the game file.");
       return false;
    }
+    printf("in %s l.%d\n", __func__, __LINE__);
 
    reset_gba();
 
+    printf("in %s l.%d\n", __func__, __LINE__);
    init_context_switch();
 
+    printf("in %s l.%d\n", __func__, __LINE__);
    set_memory_descriptors();
 
+    printf("in %s l.%d\n", __func__, __LINE__);
    return true;
 }
 
