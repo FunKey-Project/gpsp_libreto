@@ -13,6 +13,9 @@
 #include "gba_memory.h"
 #include "gba_cc_lut.h"
 
+#include <time.h>
+
+
 #if defined(VITA) && defined(HAVE_DYNAREC)
 #include <psp2/kernel/sysmem.h>
 static int translation_caches_inited = 0;
@@ -48,7 +51,7 @@ static int translation_caches_inited = 0;
 #endif
 
 #ifndef MAX_PATH
-#define MAX_PATH (1024)
+#define MAX_PATH (512)
 #endif
 
 // 59.72750057 hz
@@ -848,19 +851,14 @@ bool retro_load_game(const struct retro_game_info* info)
    if (!info)
       return false;
 
-    printf("in %s l.%d\n", __func__, __LINE__);
    use_libretro_save_method = 0;
    check_variables(1);
-    printf("in %s l.%d\n", __func__, __LINE__);
    set_input_descriptors();
 
-    printf("in %s l.%d\n", __func__, __LINE__);
 #if defined(HAVE_DYNAREC)
    if (dynarec_enable)
    {
 #if defined(HAVE_MMAP)
-
-    printf("in %s l.%d\n", __func__, __LINE__);
    rom_translation_cache = mmap(NULL, ROM_TRANSLATION_CACHE_SIZE,
                                 PROT_READ | PROT_WRITE | PROT_EXEC, MAP_ANON | MAP_PRIVATE, -1, 0);
    ram_translation_cache = mmap(NULL, RAM_TRANSLATION_CACHE_SIZE,
@@ -868,7 +866,6 @@ bool retro_load_game(const struct retro_game_info* info)
    bios_translation_cache = mmap(NULL, BIOS_TRANSLATION_CACHE_SIZE,
                                  PROT_READ | PROT_WRITE | PROT_EXEC, MAP_ANON | MAP_PRIVATE, -1, 0);
 
-    printf("in %s l.%d\n", __func__, __LINE__);
    rom_translation_ptr = rom_translation_cache;
    ram_translation_ptr = ram_translation_cache;
    bios_translation_ptr = bios_translation_cache;
@@ -890,7 +887,6 @@ bool retro_load_game(const struct retro_game_info* info)
    dynarec_enable = 0;
 #endif
 
-    printf("in %s l.%d\n", __func__, __LINE__);
    char filename_bios[MAX_PATH];
    const char* dir = NULL;
 
@@ -900,15 +896,12 @@ bool retro_load_game(const struct retro_game_info* info)
 
    extract_directory(main_path, info->path, sizeof(main_path));
 
-    printf("in %s l.%d\n", __func__, __LINE__);
    if (environ_cb(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, &dir) && dir)
       strncpy(filename_bios, dir, sizeof(filename_bios));
    else
       strncpy(filename_bios, main_path, sizeof(filename_bios));
 
    strncat(filename_bios, "/gba_bios.bin", sizeof(filename_bios));
-
-    printf("in %s l.%d\n", __func__, __LINE__);
 
    if (environ_cb(RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY, &dir) && dir)
       strncpy(save_path, dir, sizeof(save_path));
@@ -922,7 +915,6 @@ bool retro_load_game(const struct retro_game_info* info)
       return false;
    }
 
-    printf("in %s l.%d\n", __func__, __LINE__);
    if (bios_rom[0] != 0x18)
    {
       info_msg("You have an incorrect BIOS image.");
@@ -930,7 +922,6 @@ bool retro_load_game(const struct retro_game_info* info)
       info_msg("It is strongly recommended that you obtain the correct BIOS file.");
    }
 
-    printf("in %s l.%d\n", __func__, __LINE__);
    memset(gamepak_backup, -1, sizeof(gamepak_backup));
    gamepak_filename[0] = 0;
    if (load_gamepak(info, info->path) != 0)
@@ -938,17 +929,13 @@ bool retro_load_game(const struct retro_game_info* info)
       error_msg("Could not load the game file.");
       return false;
    }
-    printf("in %s l.%d\n", __func__, __LINE__);
 
    reset_gba();
 
-    printf("in %s l.%d\n", __func__, __LINE__);
    init_context_switch();
 
-    printf("in %s l.%d\n", __func__, __LINE__);
    set_memory_descriptors();
 
-    printf("in %s l.%d\n", __func__, __LINE__);
    return true;
 }
 
@@ -1030,9 +1017,19 @@ size_t retro_get_memory_size(unsigned id)
    return 0;
 }
 
+//#define DEBUG_TIME
+
 void retro_run(void)
 {
    bool updated = false;
+
+#ifdef DEBUG_TIME
+   static struct timeval start_t, last_t, current_t;
+   gettimeofday(&start_t, NULL);
+   memcpy(&last_t, &start_t, sizeof(struct timeval));
+   printf("Starting %s, time passed = %lu us\n", __func__, 
+      (start_t.tv_sec - last_t.tv_sec)*1000000 + (start_t.tv_usec-last_t.tv_usec) );
+#endif //DEBUG_TIME
 
 #if !defined(USE_LIBCO)
    if (!retro_is_emu_thread_initialized())
@@ -1048,10 +1045,30 @@ void retro_run(void)
    }
 #endif
 
+#ifdef DEBUG_TIME
+   gettimeofday(&current_t, NULL);
+   printf("before update_input time passed = %lu us\n", 
+      (current_t.tv_sec - last_t.tv_sec)*1000000 + (current_t.tv_usec-last_t.tv_usec) );
+   memcpy(&last_t, &current_t, sizeof(struct timeval));
+#endif //DEBUG_TIME
+
    update_input();
 
+#ifdef DEBUG_TIME
+   gettimeofday(&current_t, NULL);
+   printf("before input_poll_cb time passed = %lu us\n", 
+      (current_t.tv_sec - last_t.tv_sec)*1000000 + (current_t.tv_usec-last_t.tv_usec) );
+   memcpy(&last_t, &current_t, sizeof(struct timeval));
+#endif //DEBUG_TIME
    input_poll_cb();
 
+
+#ifdef DEBUG_TIME
+   gettimeofday(&current_t, NULL);
+   printf("before frameskipping time passed = %lu us\n", 
+      (current_t.tv_sec - last_t.tv_sec)*1000000 + (current_t.tv_usec-last_t.tv_usec) );
+   memcpy(&last_t, &current_t, sizeof(struct timeval));
+#endif //DEBUG_TIME
 	/* Check whether current frame should
 	 * be skipped */
    skip_next_frame = 0;
@@ -1113,6 +1130,12 @@ void retro_run(void)
       }
    }
 
+#ifdef DEBUG_TIME
+   gettimeofday(&current_t, NULL);
+   printf("before update_audio_latency time passed = %lu us\n", 
+      (current_t.tv_sec - last_t.tv_sec)*1000000 + (current_t.tv_usec-last_t.tv_usec) );
+   memcpy(&last_t, &current_t, sizeof(struct timeval));
+#endif //DEBUG_TIME
    /* If frameskip settings have changed, update
     * frontend audio latency */
    if (update_audio_latency)
@@ -1122,13 +1145,46 @@ void retro_run(void)
       update_audio_latency = false;
    }
 
+#ifdef DEBUG_TIME
+   gettimeofday(&current_t, NULL);
+   printf("before switch_to_cpu_thread time passed = %lu us\n", 
+      (current_t.tv_sec - last_t.tv_sec)*1000000 + (current_t.tv_usec-last_t.tv_usec) );
+   memcpy(&last_t, &current_t, sizeof(struct timeval));
+#endif //DEBUG_TIME
    switch_to_cpu_thread();
 
+#ifdef DEBUG_TIME
+   gettimeofday(&current_t, NULL);
+   printf("before render_audio time passed = %lu us\n", 
+      (current_t.tv_sec - last_t.tv_sec)*1000000 + (current_t.tv_usec-last_t.tv_usec) );
+   memcpy(&last_t, &current_t, sizeof(struct timeval));
+#endif //DEBUG_TIME
    render_audio();
+
+#ifdef DEBUG_TIME
+   gettimeofday(&current_t, NULL);
+   printf("before video_run time passed = %lu us\n", 
+      (current_t.tv_sec - last_t.tv_sec)*1000000 + (current_t.tv_usec-last_t.tv_usec) );
+   memcpy(&last_t, &current_t, sizeof(struct timeval));
+#endif //DEBUG_TIME
    video_run();
 
+
+#ifdef DEBUG_TIME
+   gettimeofday(&current_t, NULL);
+   printf("before environ_cb time passed = %lu us\n", 
+      (current_t.tv_sec - last_t.tv_sec)*1000000 + (current_t.tv_usec-last_t.tv_usec) );
+   memcpy(&last_t, &current_t, sizeof(struct timeval));
+#endif //DEBUG_TIME
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated) && updated)
       check_variables(0);
+
+#ifdef DEBUG_TIME
+   gettimeofday(&current_t, NULL);
+   printf("Total time time passed = %lu us\n\n", 
+      (current_t.tv_sec - start_t.tv_sec)*1000000 + (current_t.tv_usec-start_t.tv_usec) );
+   memcpy(&last_t, &current_t, sizeof(struct timeval));
+#endif //DEBUG_TIME
 }
 
 unsigned retro_api_version(void)

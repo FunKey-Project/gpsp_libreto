@@ -19,14 +19,18 @@ static void* retro_run_emulator(void *args)
 {
    char *args_str = (char *)args;
    bool dynarec   = (*args_str++ == 1) ? true : false;
+
+   //printf("************ dynarec=%d, args[0]=%d\n", dynarec, args_str[0]);
+
    u32 cycles     = strtol(args_str, NULL, 10);
 
    emu_has_exited      = false;
    emu_thread_canceled = false;
 
 #if defined(HAVE_DYNAREC)
-   if (dynarec)
+   if (dynarec){
       execute_arm_translate(cycles);
+   }
 #endif
    execute_arm(cycles);
 
@@ -76,7 +80,7 @@ void retro_switch_thread()
 
 bool retro_init_emu_thread(bool dynarec, u32 cycles)
 {
-   char args[256];
+   static volatile char args[256];
    args[0] = '\0';
 
    if (emu_thread_initialized)
