@@ -30,9 +30,6 @@ ifeq ($(platform),)
 	endif
 endif
 
-platform = funkey
-
-
 ifeq ($(firstword $(filter x86_64,$(UNAME))),x86_64)
 
 else ifeq ($(firstword $(filter amd64,$(UNAME))),amd64)
@@ -398,24 +395,22 @@ else ifeq ($(platform), gcw0)
 # FunKey S
 else ifeq ($(platform), funkey)
 	TARGET := $(TARGET_NAME)_libretro.so
-	OD_TOOLCHAIN ?= /opt/FunKey-sdk-2.0.0/
-	CC := $(OD_TOOLCHAIN)bin/arm-funkey-linux-musleabihf-gcc
-  	CXX := $(OD_TOOLCHAIN)bin/arm-funkey-linux-musleabihf-g++
-  	LD := $(OD_TOOLCHAIN)bin/arm-funkey-linux-musleabihf-gcc
-	AR = $(OD_TOOLCHAIN)bin/arm-funkey-linux-musleabihf-ar
-
-
-   	fpic := -fPIC
-   	SHARED := -shared -Wl,--version-script=link.T  -Wl,--no-undefined -fPIC
-  	#CFLAGS += -march=armv7-a+neon-vfpv4 -mtune=cortex-a7 -mfpu=neon-vfpv4 -Ofast -fno-PIC -fdata-sections -ffunction-sections -fsingle-precision-constant -fno-common -fno-builtin -DFUNKEY
+	#OD_TOOLCHAIN ?= /opt/FunKey-sdk-2.0.0/
+	#CC := $(OD_TOOLCHAIN)bin/arm-funkey-linux-musleabihf-gcc
+  	#CXX := $(OD_TOOLCHAIN)bin/arm-funkey-linux-musleabihf-g++
+  	#LD := $(OD_TOOLCHAIN)bin/arm-funkey-linux-musleabihf-gcc
+	#AR = $(OD_TOOLCHAIN)bin/arm-funkey-linux-musleabihf-ar
+	
+   	pic := -fPIC
+    SHARED := -shared -Wl,--version-script=link.T  -Wl,--no-undefined -fPIC
    	CFLAGS += -Ofast \
-    	-flto=4 -fwhole-program -fuse-linker-plugin \
-    	-fdata-sections -ffunction-sections -Wl,--gc-sections \
-    	-fno-stack-protector -fno-ident -fomit-frame-pointer \
-    	-falign-functions=1 -falign-jumps=1 -falign-loops=1 \
-    	-fno-unwind-tables -fno-asynchronous-unwind-tables -fno-unroll-loops \
-    	-fmerge-all-constants -fno-math-errno \
-    	-marm -mtune=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard -march=armv7-a
+   	-flto=4 -fwhole-program -fuse-linker-plugin \
+   	-fdata-sections -ffunction-sections -Wl,--gc-sections \
+   	-fno-stack-protector -fno-ident -fomit-frame-pointer \
+   	-falign-functions=1 -falign-jumps=1 -falign-loops=1 \
+   	-fno-unwind-tables -fno-asynchronous-unwind-tables -fno-unroll-loops \
+   	-fmerge-all-constants -fno-math-errno \
+   	-marm -mtune=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard
    	CXXFLAGS = $(CFLAGS) -std=gnu++11
    	CPPFLAGS += $(CFLAGS)
    	ASFLAGS += $(CFLAGS)
@@ -423,42 +418,19 @@ else ifeq ($(platform), funkey)
    	ARCH = arm
    	BUILTIN_GPU = neon
    	CPU_ARCH := arm
-   	HAVE_DYNAREC := 1
-   	CFLAGS += -DARM_MEMORY_DYNAREC
+   	HAVE_DYNAREC = 1
+    USE_LIBCO = 0   ## IMPORTANT to be 0!
    	CFLAGS += -DARM -DARM_ARCH
-   	USE_LIBCO = 0
-
-	
-#   	pic := -fPIC
-#     SHARED := -shared -Wl,--version-script=link.T  -Wl,--no-undefined -fPIC
-#   	CFLAGS += -Ofast \
-#   	-flto=4 -fwhole-program -fuse-linker-plugin \
-#   	-fdata-sections -ffunction-sections -Wl,--gc-sections \
-#   	-fno-stack-protector -fno-ident -fomit-frame-pointer \
-#   	-falign-functions=1 -falign-jumps=1 -falign-loops=1 \
-#   	-fno-unwind-tables -fno-asynchronous-unwind-tables -fno-unroll-loops \
-#   	-fmerge-all-constants -fno-math-errno \
-#   	-marm -mtune=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard
-#   	CXXFLAGS = $(CFLAGS) -std=gnu++11
-#   	CPPFLAGS += $(CFLAGS)
-#   	ASFLAGS += $(CFLAGS)
-#   	HAVE_NEON = 1
-#   	ARCH = arm
-#   	BUILTIN_GPU = neon
-#   	CPU_ARCH := arm
-#   	HAVE_DYNAREC = 1
-#    	USE_LIBCO = 0   ## IMPORTANT to be 0!
-#   	CFLAGS += -DARM -DARM_ARCH
-#   	CFLAGS += -DARM_MEMORY_DYNAREC
-#   	ifeq ($(shell echo `$(CC) -dumpversion` "< 4.9" | bc -l), 1)
-#   	  CFLAGS += -march=armv7-a
-#   	else
-#   	  CFLAGS += -march=armv7ve
-#   	  # If gcc is 5.0 or later
-#   	  ifeq ($(shell echo `$(CC) -dumpversion` ">= 5" | bc -l), 1)
-#   	    LDFLAGS += -static-libgcc -static-libstdc++
-#   	  endif
-#   	endif
+   	CFLAGS += -DARM_MEMORY_DYNAREC
+   	ifeq ($(shell echo `$(CC) -dumpversion` "< 4.9" | bc -l), 1)
+   	  CFLAGS += -march=armv7-a
+   	else
+   	  CFLAGS += -march=armv7ve
+   	  # If gcc is 5.0 or later
+   	  ifeq ($(shell echo `$(CC) -dumpversion` ">= 5" | bc -l), 1)
+   	    LDFLAGS += -static-libgcc -static-libstdc++
+   	  endif
+   	endif
 
 # Windows
 else

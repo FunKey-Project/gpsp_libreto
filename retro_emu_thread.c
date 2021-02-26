@@ -29,9 +29,11 @@ static void* retro_run_emulator(void *args)
 
 #if defined(HAVE_DYNAREC)
    if (dynarec){
+      printf("DYNAREC ENABLED\n");
       execute_arm_translate(cycles);
    }
 #endif
+   printf("NO DYNAREC\n");
    execute_arm(cycles);
 
    emu_has_exited = true;

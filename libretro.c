@@ -719,6 +719,7 @@ static void check_variables(int started_from_load)
    {
       if (started_from_load)
       {
+         printf("In %s, var.value=%s\n", __func__, var.value);
          if (strcmp(var.value, "disabled") == 0)
             dynarec_enable = 0;
          else if (strcmp(var.value, "enabled") == 0)
